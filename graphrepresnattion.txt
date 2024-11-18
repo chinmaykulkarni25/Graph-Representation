@@ -1,0 +1,181 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+// Hash table structure
+typedef struct HashTable {
+    char **keys;
+    char **values;
+    int size;
+    int count;
+} HashTable;
+
+
+// Create a new hash table
+HashTable* createHashTable(int size) {
+    HashTable *ht = (HashTable *)malloc(sizeof(HashTable));
+    ht->size = size;
+    ht->count = 0;
+    ht->keys = (char **)calloc(size, sizeof(char *));
+    ht->values = (char **)calloc(size, sizeof(char *));
+    return ht;
+}
+
+
+// Hash function
+int hashFunction(HashTable *ht, char *key) {
+    unsigned long hash = 0;
+    while (*key)
+        hash = (hash * 31) + *key++;
+    return hash % ht->size;
+}
+
+
+// Insert a key-value pair
+void insert(HashTable *ht, char *key, char *value) {
+    int index = hashFunction(ht, key);
+    int originalIndex = index;
+
+
+    while (ht->keys[index] != NULL) {
+        // If key already exists, update its value
+        if (strcmp(ht->keys[index], key) == 0) {
+            free(ht->values[index]);
+            ht->values[index] = strdup(value);
+            printf("Updated key: %s with value: %s\n", key, value);
+            return;
+        }
+        index = (index + 1) % ht->size;
+        if (index == originalIndex) {
+            printf("Hash table is full\n");
+            return;
+        }
+    }
+
+
+    // Insert new key-value pair
+    ht->keys[index] = strdup(key);
+    ht->values[index] = strdup(value);
+    ht->count++;
+    printf("Inserted key: %s with value: %s\n", key, value);
+}
+
+
+// Search for a key
+char* search(HashTable *ht, char *key) {
+    int index = hashFunction(ht, key);
+    int originalIndex = index;
+
+
+    while (ht->keys[index] != NULL) {
+        if (strcmp(ht->keys[index], key) == 0)
+            return ht->values[index];
+        index = (index + 1) % ht->size;
+        if (index == originalIndex)
+            break;
+    }
+    return NULL;
+}
+
+
+// Delete a key
+void deleteKey(HashTable *ht, char *key) {
+    int index = hashFunction(ht, key);
+    int originalIndex = index;
+
+
+    while (ht->keys[index] != NULL) {
+        if (strcmp(ht->keys[index], key) == 0) {
+            free(ht->keys[index]);
+            free(ht->values[index]);
+            ht->keys[index] = NULL;
+            ht->values[index] = NULL;
+            ht->count--;
+            printf("Deleted key: %s\n", key);
+            return;
+        }
+        index = (index + 1) % ht->size;
+        if (index == originalIndex)
+            break;
+    }
+    printf("Key not found: %s\n", key);
+}
+
+
+// Free the hash table
+void freeHashTable(HashTable *ht) {
+    for (int i = 0; i < ht->size; i++) {
+        if (ht->keys[i]) {
+            free(ht->keys[i]);
+            free(ht->values[i]);
+        }
+    }
+    free(ht->keys);
+    free(ht->values);
+    free(ht);
+}
+
+
+// Menu for user interaction
+void menu(HashTable *ht) {
+    int choice;
+    char key[100], value[100];
+
+
+    do {
+        printf("\n--- Hash Table Operations ---\n");
+        printf("1. Insert\n");
+        printf("2. Search\n");
+        printf("3. Delete\n");
+        printf("4. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+
+        switch (choice) {
+            case 1:
+                printf("Enter key: ");
+                scanf("%s", key);
+                printf("Enter value: ");
+                scanf("%s", value);
+                insert(ht, key, value);
+                break;
+            case 2:
+                printf("Enter key to search: ");
+                scanf("%s", key);
+                char *result = search(ht, key);
+                if (result)
+                    printf("Found: %s\n", result);
+                else
+                    printf("Key not found: %s\n", key);
+                break;
+            case 3:
+                printf("Enter key to delete: ");
+                scanf("%s", key);
+                deleteKey(ht, key);
+                break;
+            case 4:
+                printf("Exiting...\n");
+                break;
+            default:
+                printf("Invalid choice! Try again.\n");
+        }
+    } while (choice != 4);
+}
+
+
+// Main function
+int main() {
+    int tableSize;
+    printf("Enter the size of the hash table: ");
+    scanf("%d", &tableSize);
+
+
+    HashTable *ht = createHashTable(tableSize);
+    menu(ht);
+    freeHashTable(ht);
+
+
+    return 0;
+}
